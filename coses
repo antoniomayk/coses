@@ -1,0 +1,21 @@
+#!/bin/bash
+
+VERSION="0.0.1-SNAPSHOT"
+export JAR_PATH="./build/libs/coses-$VERSION.jar"
+
+# Build the project
+./gradlew clean build
+
+# Build the Docker image
+docker buildx build -t antoniomayk/coses -f docker/coses.Dockerfile --build-arg JAR_PATH="$JAR_PATH" .
+
+# Handle Docker volume (using environment variable)
+DOCKER_VOLUME_PATH=${POSTGRES_DATA_DIR:-$HOME/.docker/postgresql/coses/}
+
+# Clean and prepare volume directory
+sudo rm    -rf           "$DOCKER_VOLUME_PATH"
+sudo mkdir -p            "$DOCKER_VOLUME_PATH"
+sudo chown -R  1001:root "$DOCKER_VOLUME_PATH"
+
+# Start docker-compose with force-recreate
+docker-compose -f ./docker/coses.docker-compose.yml up --force-recreate
